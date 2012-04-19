@@ -41,7 +41,7 @@ import static com.brighttag.sc2cc.HectorCassandraModule.GEO_DATA_FILE_LOCATION;
  * Multi-threaded bulk loader for geo data
  *
  * Execute this class by invoking the following at the project root:
- *   mvn -e exec:java -Dexec.mainClass="com.brighttag.sc2cc.composite.CompositeDataLoader"
+ *   mvn -e exec:java -Dexec.mainClass="com.brighttag.sc2cc.CompositeDataLoader"
  */
 public class CompositeDataLoader {
   private static Logger log = LoggerFactory.getLogger(CompositeDataLoader.class);
