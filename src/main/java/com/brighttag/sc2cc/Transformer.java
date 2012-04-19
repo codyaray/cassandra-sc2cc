@@ -2,7 +2,7 @@ package com.brighttag.sc2cc;
 
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
 
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -39,10 +39,10 @@ public class Transformer {
   private final ListeningExecutorService executor;
 
   @Inject
-  public Transformer(Cluster cluster, Keyspace keyspace) {
+  public Transformer(Cluster cluster, Keyspace keyspace, ExecutorService executor) {
     this.cluster = cluster;
     this.keyspace = keyspace;
-    this.executor = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(5));
+    this.executor = MoreExecutors.listeningDecorator(executor);
   }
 
   public void shutdown() {
@@ -74,6 +74,9 @@ public class Transformer {
    * @return a list of futures representing the number of rows inserted by each worker
    */
   public List<ListenableFuture<Integer>> transform(String oldColumnFamily, String newColumnFamily, int groupSize) {
+    log.info("Transforming column family {} to {} using groupSize {}",
+        new Object[] {oldColumnFamily, newColumnFamily, groupSize});
+
     List<ListenableFuture<Integer>> rowCounts = Lists.newArrayList();
     Iterable<SuperRow<String,String,String,String>> keyIterator =
             new SuperRowIterator<String>(keyspace, oldColumnFamily, StringSerializer.get());
@@ -86,6 +89,8 @@ public class Transformer {
         rows.clear();
       }
     }
+    // rewrite remaining rows
+    rowCounts.add(doRewrite(newColumnFamily, rows));
 
     return rowCounts;
   }

@@ -1,6 +1,8 @@
 package com.brighttag.sc2cc;
 
 import java.util.Properties;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
@@ -8,6 +10,9 @@ import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import com.googlecode.rocoto.configuration.ConfigurationModule;
 import com.googlecode.rocoto.configuration.readers.PropertiesReader;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import me.prettyprint.cassandra.model.ConfigurableConsistencyLevel;
 import me.prettyprint.hector.api.Cluster;
@@ -19,8 +24,10 @@ import static com.brighttag.sc2cc.Configuration.CASSANDRA_CLUSTER_NAME;
 import static com.brighttag.sc2cc.Configuration.CASSANDRA_CLUSTER_HOSTS;
 import static com.brighttag.sc2cc.Configuration.CASSANDRA_KEYSPACE_NAME;
 import static com.brighttag.sc2cc.Configuration.TRANSFORMER_GROUP_SIZE;
+import static com.brighttag.sc2cc.Configuration.TRANSFORMER_WORKER_NUM;
 
 public class HectorCassandraModule extends AbstractModule {
+  private static Logger log = LoggerFactory.getLogger(HectorCassandraModule.class);
 
   @Override
   protected void configure() {
@@ -29,6 +36,13 @@ public class HectorCassandraModule extends AbstractModule {
             Configuration.getProperties("/sc2cc.properties"),
             Configuration.getProperties(),
             System.getProperties())));
+  }
+
+  // I'll blow up this module if configured with a non-integer!
+  @Provides @Singleton
+  protected ExecutorService provideExecutorService(
+      @Named(TRANSFORMER_WORKER_NUM + ".resolved") String numWorkers) {
+    return Executors.newFixedThreadPool(Integer.parseInt(numWorkers));
   }
 
   @Provides @Singleton
@@ -41,6 +55,8 @@ public class HectorCassandraModule extends AbstractModule {
   protected Cluster provideCluster(
       @Named(CASSANDRA_CLUSTER_NAME + ".resolved") String clusterName,
       @Named(CASSANDRA_CLUSTER_HOSTS + ".resolved") String clusterHosts) {
+    log.debug("Using cassandra cluster: {}", clusterName);
+    log.debug("Using cassandra hosts: {}", clusterHosts);
     return HFactory.getOrCreateCluster(clusterName, clusterHosts);
   }
 
@@ -52,14 +68,18 @@ public class HectorCassandraModule extends AbstractModule {
     return ccl;
   }
 
-  // I'll blow up this module if configured with a non-integer!
-  @Provides @Singleton
-  @Named(TRANSFORMER_GROUP_SIZE)
+  // I, too, will blow up this module if configured with a non-integer!
+  @Provides @Singleton @Named(TRANSFORMER_GROUP_SIZE)
   int provideGroupSize(@Named(TRANSFORMER_GROUP_SIZE) String groupSize) {
+    log.debug("Using transformer group size: {}", groupSize);
     return Integer.parseInt(groupSize);
   }
 
-  static class OrderedPropertiesReader extends PropertiesReader {
+  /**
+   * Allows multiple levels of property precedence. Specify
+   * properties in order of lowest-to-highest precedence.
+   */
+  private static class OrderedPropertiesReader extends PropertiesReader {
     public OrderedPropertiesReader(Properties... properties) {
       super(merge(properties));
     }
