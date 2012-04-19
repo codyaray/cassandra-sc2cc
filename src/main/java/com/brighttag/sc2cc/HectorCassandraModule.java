@@ -18,7 +18,7 @@ import me.prettyprint.hector.api.factory.HFactory;
 import static com.brighttag.sc2cc.Configuration.CASSANDRA_CLUSTER_NAME;
 import static com.brighttag.sc2cc.Configuration.CASSANDRA_CLUSTER_HOSTS;
 import static com.brighttag.sc2cc.Configuration.CASSANDRA_KEYSPACE_NAME;
-import static com.brighttag.sc2cc.Configuration.GROUP_SIZE;
+import static com.brighttag.sc2cc.Configuration.TRANSFORMER_GROUP_SIZE;
 
 public class HectorCassandraModule extends AbstractModule {
 
@@ -54,7 +54,8 @@ public class HectorCassandraModule extends AbstractModule {
 
   // I'll blow up this module if configured with a non-integer!
   @Provides @Singleton
-  int provideGroupSize(@Named(GROUP_SIZE) String groupSize) {
+  @Named(TRANSFORMER_GROUP_SIZE)
+  int provideGroupSize(@Named(TRANSFORMER_GROUP_SIZE) String groupSize) {
     return Integer.parseInt(groupSize);
   }
 

@@ -1,26 +1,25 @@
-Overview
----------
-This is a step-by-step tutorial designed to expose folks who might be new to Apache Cassandra to some more real-world examples of usage. This tutorial was initially put together [a presentation I made](http://www.slideshare.net/zznate/introduction-to-apachecassandrafordevelope) at Data Day Austin in late January of 2011. It has been [recently updated](http://www.slideshare.net/zznate/introduction-to-apachecassandrafordeveloperslhg) for Cassandra SF 2011. 
+# sc2cc - SuperColumns to Composite Columns!
 
-This tutorial assumes you have a release of Apache Cassandra version 0.8.x running on your machine accessible via localhost:9160 (the default). All necessary keyspace creation scripts and data inserts are included.
+Tired of your worn out old Super Columns in Cassandra? Make 'em new again.<br/>
+With one run of `sc2cc`, your columns will be as Composite as ever.
 
-Tutorial examples are designed to be run by Maven via the maven-exec-plugin. This makes dependency management a breeze (see the pom file!) and removes the need for goofy classpath maintenance scripts and such. An example of command invocation is in the Javadoc comment of each file. For example, to invoke the GetCityForNpanxx class, the following command should be used:
+# Configuration
 
-> mvn -e exec:java -Dexec.args="get" -Dexec.mainClass="com.brighttag.sc2cc.TutorialRunner"
+You just need to know three things:
 
-To execute the schema creation and import script use the following:
+* Configuration is properties-file based. See `src/main/resources/sc2cc.properties`.
+* You can also override any of the properties by passing `-Dkey=value` to the `mvn` command.
+* Defaults are set in `src/main/java/com/brighttag/sc2cc/Configuration.java`.
 
-> bin/cassandra-cli --host localhost < /path/to/script/npanxx_script.txt 
+# Usage
 
-This script creates a keyspace named 'Tutorial' and three column families:
+Once you've set the configuration, be sure to create the new column family schema.<br/>
+The easiest way to do this is using `cassandra-cli`. View the current column family schema<br/>
+using the command `show schema` (gasp!). Just copy, rename the column family, and paste<br/>
+into the CLI to create the new column family.
 
-* StateCity: uses the state and city as a key. Column names are area codes, values are a concatenation of latitude and longitude
-* AreaCode: Uses the area code as a key, with the city ad NPA mapped to the latitude and longitude 
-* Npanxx: Key is NPA and NXX concatenation. Column names static in that each row has the same number and type of columns
+To begin the transformation, just run
 
+    mvn -e exec:java -Dexec.mainClass="com.brighttag.sc2cc.Transformer"
 
-Have a look at npanxx_script.txt for more details - the contents are fairly straight forward. Even more so when you go through the tutorials.
-
-The sample data used in this tutorial is taken from the [North American Numbering Plan](http://en.wikipedia.org/wiki/North_American_Numbering_Plan)
-
-I found my copy via [InfoChimps!](http://infochimps.com/datasets/area-code-and-exchange-to-location-north-america- 
+That's it!

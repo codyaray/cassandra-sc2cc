@@ -2,19 +2,13 @@ package com.brighttag.sc2cc;
 
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 
 import com.google.common.collect.Lists;
-import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
-import com.google.inject.Guice;
 import com.google.inject.Inject;
-import com.google.inject.Injector;
-import com.google.inject.Key;
-import com.google.inject.name.Names;
 
 import me.prettyprint.cassandra.serializers.CompositeSerializer;
 import me.prettyprint.cassandra.serializers.StringSerializer;
@@ -30,59 +24,22 @@ import me.prettyprint.hector.api.mutation.Mutator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static com.brighttag.sc2cc.Configuration.CASSANDRA_OLD_COLUMN_FAMILY;
-import static com.brighttag.sc2cc.Configuration.CASSANDRA_NEW_COLUMN_FAMILY;
-import static com.brighttag.sc2cc.Configuration.GROUP_SIZE;
-
 /**
  * Multi-threaded bulk transformer to rewrite SuperColumn-based data 
  * to use Composite Columns instead.
- *
- * Execute this class by invoking the following at the project root:
- *   mvn -e exec:java -Dexec.mainClass="com.brighttag.sc2cc.SuperColumnToCompositeTransformer"
+ * 
+ * @author codyaray
+ * @since 4/19/2012
  */
-public class SuperColumnToCompositeTransformer {
-  private static Logger log = LoggerFactory.getLogger(SuperColumnToCompositeTransformer.class);
-
-  public static void main(String[] args) {
-    Injector injector = Guice.createInjector(new HectorCassandraModule());
-
-    SuperColumnToCompositeTransformer transformer = injector.getInstance(SuperColumnToCompositeTransformer.class);
-    String oldColumnFamily = injector.getInstance(Key.get(String.class, Names.named(CASSANDRA_OLD_COLUMN_FAMILY + ".resolved")));
-    String newColumnFamily = injector.getInstance(Key.get(String.class, Names.named(CASSANDRA_NEW_COLUMN_FAMILY + ".resolved")));
-    int groupSize = injector.getInstance(Key.get(Integer.class, Names.named(GROUP_SIZE + ".resolved")));
-
-    try {
-      long startTime = System.currentTimeMillis();
-      List<ListenableFuture<Integer>> futures = transformer.transform(oldColumnFamily, newColumnFamily, groupSize);
-      int total = sum(Futures.allAsList(futures).get()); // waits for completion
-
-      log.info("Transformed {} rows in {} ms", total, System.currentTimeMillis() - startTime);
-    } catch (InterruptedException e) {
-      log.warn("Interrupted while migrating data", e);
-      Thread.currentThread().interrupt();
-    } catch (ExecutionException e) {
-      log.error("Error while rewriting data", e);
-    }
-
-    transformer.shutdown();
-  }
-
-  // surprised there's nothing that does this somewhere on the classpath already
-  private static int sum(List<Integer> counts) {
-    int total = 0;
-    for (int count : counts) {
-      total += count;
-    }
-    return total;
-  }
+public class Transformer {
+  private static Logger log = LoggerFactory.getLogger(Transformer.class);
 
   private final Cluster cluster;
   private final Keyspace keyspace;
   private final ListeningExecutorService executor;
 
   @Inject
-  public SuperColumnToCompositeTransformer(Cluster cluster, Keyspace keyspace) {
+  public Transformer(Cluster cluster, Keyspace keyspace) {
     this.cluster = cluster;
     this.keyspace = keyspace;
     this.executor = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(5));

@@ -9,29 +9,30 @@ public class Configuration {
   static final String CASSANDRA_KEYSPACE_NAME = "com.brighttag.sc2cc.keyspace.name";
   static final String CASSANDRA_OLD_COLUMN_FAMILY = "com.brighttag.sc2cc.column.family.old";
   static final String CASSANDRA_NEW_COLUMN_FAMILY = "com.brighttag.sc2cc.column.family.new";
-  static final String GROUP_SIZE = "com.brighttag.sc2cc.group.size";
+  static final String TRANSFORMER_GROUP_SIZE = "com.brighttag.sc2cc.group.size";
 
-  private static final String DEFAULT_CLUSTER_NAME = "TutorialCluster";
+  private static final String DEFAULT_CLUSTER_NAME = "Test Cluster";
   private static final String DEFAULT_CLUSTER_HOSTS = "127.0.0.1:9160";
-  private static final String DEFAULT_KEYSPACE_NAME = "Tutorial";
-  private static final String DEFAULT_OLD_COLUMN_FAMILY = "CountryStateCity";
-  private static final String DEFAULT_NEW_COLUMN_FAMILY = "CountryStateCity";
   private static final int DEFAULT_GROUP_SIZE = 10000;
 
   public static Properties getProperties() {
     Properties properties = new Properties();
+
+    // Optional properties (see defaults)
     properties.setProperty(CASSANDRA_CLUSTER_NAME + ".resolved",
         "${" + CASSANDRA_CLUSTER_NAME  + "|" + DEFAULT_CLUSTER_NAME  + "}");
     properties.setProperty(CASSANDRA_CLUSTER_HOSTS + ".resolved",
         "${" + CASSANDRA_CLUSTER_HOSTS + "|" + DEFAULT_CLUSTER_HOSTS + "}");
+    properties.setProperty(TRANSFORMER_GROUP_SIZE + ".resolved",
+        "${" + TRANSFORMER_GROUP_SIZE  + "|" + DEFAULT_GROUP_SIZE    + "}");
+
+    // Required properties
     properties.setProperty(CASSANDRA_KEYSPACE_NAME + ".resolved",
-        "${" + CASSANDRA_KEYSPACE_NAME + "|" + DEFAULT_KEYSPACE_NAME + "}");
+        "${" + CASSANDRA_KEYSPACE_NAME     + "}");
     properties.setProperty(CASSANDRA_OLD_COLUMN_FAMILY + ".resolved",
-        "${" + CASSANDRA_OLD_COLUMN_FAMILY + "|" + DEFAULT_OLD_COLUMN_FAMILY + "}");
+        "${" + CASSANDRA_OLD_COLUMN_FAMILY + "}");
     properties.setProperty(CASSANDRA_NEW_COLUMN_FAMILY + ".resolved",
-        "${" + CASSANDRA_NEW_COLUMN_FAMILY + "|" + DEFAULT_NEW_COLUMN_FAMILY + "}");
-    properties.setProperty(GROUP_SIZE + ".resolved",
-        "${" + GROUP_SIZE + "|" + DEFAULT_GROUP_SIZE + "}");
+        "${" + CASSANDRA_NEW_COLUMN_FAMILY + "}");
     return properties;
   }
 
