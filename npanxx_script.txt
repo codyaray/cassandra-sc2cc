@@ -1,0 +1,73 @@
+drop keyspace Tutorial;
+create keyspace Tutorial
+    with strategy_options = [{replication_factor:1}]
+    and placement_strategy = 'org.apache.cassandra.locator.SimpleStrategy';
+
+use Tutorial;
+drop column family StateCity;
+create column family StateCity
+    with comparator = LongType
+    and default_validation_class = 'UTF8Type'
+    and key_validation_class = 'UTF8Type';
+    
+
+drop column family AreaCode;
+create column family AreaCode
+    with comparator = UTF8Type
+    and default_validation_class = 'UTF8Type'
+    and key_validation_class = 'UTF8Type';
+
+drop column family Npanxx;
+create column family Npanxx
+    with comparator = AsciiType
+    and default_validation_class = 'UTF8Type'
+    and key_validation_class = 'UTF8Type';
+    
+create column family StateNpaIndexStatic
+    with comparator = 'CompositeType(UTF8Type,LongType,LongType)'
+    and key_validation_class = 'UTF8Type'
+    and default_validation_class = 'UTF8Type';
+    
+create column family StateNpaIndexDynamic
+    with comparator = 'DynamicCompositeType(s=>UTF8Type,l=>LongType)'
+    and key_validation_class = 'UTF8Type'
+    and default_validation_class = 'UTF8Type';    
+
+set StateCity['TX Austin']['202'] = '30.27x097.74';
+set StateCity['TX Austin']['203'] = '30.27x097.74';
+set StateCity['TX Austin']['204'] = '30.32x097.73';
+set StateCity['TX Austin']['205'] = '30.32x097.73';
+set StateCity['TX Austin']['206'] = '30.32x097.73';
+
+set AreaCode['512']['Austin__202'] = '30.27x097.74';
+set AreaCode['512']['Austin__203'] = '30.27x097.74';
+set AreaCode['512']['Austin__204'] = '30.32x097.73';
+set AreaCode['512']['Austin__205'] = '30.32x097.73';
+set AreaCode['512']['Austin__206'] = '30.32x097.73';
+
+set Npanxx['512202']['city'] = 'Austin';
+set Npanxx['512202']['state'] = 'TX';
+set Npanxx['512202']['lat'] = '30.27';
+set Npanxx['512202']['lng'] = '097.74';
+
+set Npanxx['512203']['city'] = 'Austin';
+set Npanxx['512203']['state'] = 'TX';
+set Npanxx['512203']['lat'] = '30.27';
+set Npanxx['512203']['lng'] = '097.74';
+
+set Npanxx['512204']['city'] = 'Austin';
+set Npanxx['512204']['state'] = 'TX';
+set Npanxx['512204']['lat'] = '30.32';
+set Npanxx['512204']['lng'] = '097.73';
+
+set Npanxx['512205']['city'] = 'Austin';
+set Npanxx['512205']['state'] = 'TX';
+set Npanxx['512205']['lat'] = '30.32';
+set Npanxx['512205']['lng'] = '097.73';
+
+set Npanxx['512206']['city'] = 'Austin';
+set Npanxx['512206']['state'] = 'TX';
+set Npanxx['512206']['lat'] = '30.32';
+set Npanxx['512206']['lng'] = '097.73';
+
+
