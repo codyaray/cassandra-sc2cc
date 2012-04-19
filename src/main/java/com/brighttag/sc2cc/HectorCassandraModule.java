@@ -15,13 +15,12 @@ import me.prettyprint.hector.api.HConsistencyLevel;
 import me.prettyprint.hector.api.Keyspace;
 import me.prettyprint.hector.api.factory.HFactory;
 
-public class HectorCassandraModule extends AbstractModule {
+import static com.brighttag.sc2cc.Configuration.CASSANDRA_CLUSTER_NAME;
+import static com.brighttag.sc2cc.Configuration.CASSANDRA_CLUSTER_HOSTS;
+import static com.brighttag.sc2cc.Configuration.CASSANDRA_KEYSPACE_NAME;
+import static com.brighttag.sc2cc.Configuration.GROUP_SIZE;
 
-  static final String CASSANDRA_CLUSTER_NAME = "com.brighttag.sc2cc.cluster.name";
-  static final String CASSANDRA_CLUSTER_HOSTS = "com.brighttag.sc2cc.cluster.hosts";
-  static final String CASSANDRA_KEYSPACE_NAME = "com.brighttag.sc2cc.keyspace.name";
-  static final String CASSANDRA_COLUMN_FAMILY = "com.brighttag.sc2cc.column.family";
-  static final String GEO_DATA_FILE_LOCATION = "com.brighttag.sc2cc.data.file.location";
+public class HectorCassandraModule extends AbstractModule {
 
   @Override
   protected void configure() {
@@ -49,7 +48,14 @@ public class HectorCassandraModule extends AbstractModule {
   protected ConfigurableConsistencyLevel provideConfigurableConsistencyLevel() {
     ConfigurableConsistencyLevel ccl = new ConfigurableConsistencyLevel();
     ccl.setDefaultReadConsistencyLevel(HConsistencyLevel.ONE);
+    ccl.setDefaultWriteConsistencyLevel(HConsistencyLevel.ONE);
     return ccl;
+  }
+
+  // I'll blow up this module if configured with a non-integer!
+  @Provides @Singleton
+  int provideGroupSize(@Named(GROUP_SIZE) String groupSize) {
+    return Integer.parseInt(groupSize);
   }
 
   static class OrderedPropertiesReader extends PropertiesReader {
