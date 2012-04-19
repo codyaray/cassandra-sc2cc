@@ -2,6 +2,11 @@ package com.brighttag.sc2cc;
 
 import java.util.Iterator;
 
+import com.google.inject.Guice;
+import com.google.inject.Inject;
+import com.google.inject.Injector;
+import com.google.inject.name.Named;
+
 import me.prettyprint.cassandra.serializers.CompositeSerializer;
 import me.prettyprint.cassandra.serializers.StringSerializer;
 import me.prettyprint.cassandra.service.ColumnSliceIterator;
@@ -11,6 +16,7 @@ import me.prettyprint.hector.api.beans.HColumn;
 import me.prettyprint.hector.api.factory.HFactory;
 import me.prettyprint.hector.api.query.SliceQuery;
 
+import static com.brighttag.sc2cc.HectorCassandraModule.CASSANDRA_COLUMN_FAMILY;
 import static me.prettyprint.hector.api.beans.Composite.ComponentEquality;
 
 /**
@@ -31,10 +37,8 @@ public class CompositeQuery {
   private static String START_ARG = "US";
 
   public static void main(String[] args) {
-    Configuration config = Configuration.fromProperties();
-    CassandraContext context = new CassandraContext(config);
-
-    CompositeQuery compositeQuery = new CompositeQuery(context.getKeyspace(), config.getColumnFamilyName());
+    Injector injector = Guice.createInjector(new HectorCassandraModule());
+    CompositeQuery compositeQuery = injector.getInstance(CompositeQuery.class);
 
     Composite start = compositeFrom(START_ARG, ComponentEquality.EQUAL);
     Composite end = compositeFrom(START_ARG, ComponentEquality.GREATER_THAN_EQUAL);
@@ -56,11 +60,13 @@ public class CompositeQuery {
   }
 
   private final Keyspace keyspace;
-  private final String columnFamilyName;
+  private final String columnFamily;
 
-  CompositeQuery(Keyspace keyspace, String columnFamilyName) {
+  @Inject
+  CompositeQuery(Keyspace keyspace,
+      @Named(CASSANDRA_COLUMN_FAMILY + ".resolved") String columnFamily) {
     this.keyspace = keyspace;
-    this.columnFamilyName = columnFamilyName;
+    this.columnFamily = columnFamily;
   }
 
   /**
@@ -97,7 +103,7 @@ public class CompositeQuery {
       SliceQuery<String, Composite, String> sliceQuery = HFactory.createSliceQuery(
           keyspace, StringSerializer.get(),
           new CompositeSerializer(), StringSerializer.get());
-      sliceQuery.setColumnFamily(columnFamilyName);
+      sliceQuery.setColumnFamily(columnFamily);
       sliceQuery.setKey(key);
 
       sliceIterator = new ColumnSliceIterator<String,Composite,String>(sliceQuery, start, end, false);

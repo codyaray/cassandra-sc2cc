@@ -15,10 +15,16 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
+import com.google.inject.Guice;
+import com.google.inject.Inject;
+import com.google.inject.Injector;
+import com.google.inject.Key;
+import com.google.inject.name.Names;
 
 
 import me.prettyprint.cassandra.serializers.CompositeSerializer;
 import me.prettyprint.cassandra.serializers.StringSerializer;
+import me.prettyprint.hector.api.Cluster;
 import me.prettyprint.hector.api.Keyspace;
 import me.prettyprint.hector.api.beans.Composite;
 import me.prettyprint.hector.api.beans.HColumn;
@@ -29,6 +35,8 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static com.brighttag.sc2cc.HectorCassandraModule.GEO_DATA_FILE_LOCATION;
+
 /**
  * Multi-threaded bulk loader for geo data
  *
@@ -38,15 +46,17 @@ import org.slf4j.LoggerFactory;
 public class CompositeDataLoader {
   private static Logger log = LoggerFactory.getLogger(CompositeDataLoader.class);
 
-  public static void main(String[] args) {
-    Configuration config = Configuration.fromProperties();
-    CassandraContext context = new CassandraContext(config);
+  private static final String RESOLVED_FILE_LOCATION = GEO_DATA_FILE_LOCATION + ".resolved";
 
-    CompositeDataLoader loader = new CompositeDataLoader(context);
+  public static void main(String[] args) {
+    Injector injector = Guice.createInjector(new HectorCassandraModule());
+
+    String dataFile = injector.getInstance(Key.get(String.class, Names.named(RESOLVED_FILE_LOCATION)));
+    CompositeDataLoader loader = injector.getInstance(CompositeDataLoader.class);
 
     try {
       long startTime = System.currentTimeMillis();
-      List<ListenableFuture<Integer>> futures = loader.load(config.getDataFile());
+      List<ListenableFuture<Integer>> futures = loader.load(dataFile);
       int total = sum(futures);
 
       log.info("Inserted {} timezones in {} ms", total, System.currentTimeMillis() - startTime);
@@ -72,17 +82,20 @@ public class CompositeDataLoader {
     return total;
   }
 
-  private final CassandraContext context;
+  private final Cluster cluster;
+  private final Keyspace keyspace;
   private final ListeningExecutorService executor;
 
-  public CompositeDataLoader(CassandraContext context) {
-    this.context = context;
+  @Inject
+  public CompositeDataLoader(Cluster cluster, Keyspace keyspace) {
+    this.cluster = cluster;
+    this.keyspace = keyspace;
     this.executor = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(5));
   }
 
   public void shutdown() {
     executor.shutdown();
-    context.getCluster().getConnectionManager().shutdown();
+    cluster.getConnectionManager().shutdown();
   }
 
   public List<ListenableFuture<Integer>> load(String file) throws IOException {
@@ -111,7 +124,7 @@ public class CompositeDataLoader {
   }
 
   private ListenableFuture<Integer> doParse(List<String> lines) {
-    return executor.submit(new LineParser(lines, context.getKeyspace()));
+    return executor.submit(new LineParser(lines, keyspace));
   }
 
   static class LineParser implements Callable<Integer> {
