@@ -28,8 +28,8 @@ import static com.brighttag.sc2cc.Configuration.TRANSFORMER_TASK_SIZE;
 import static com.brighttag.sc2cc.Configuration.TRANSFORMER_QUEUE_SIZE;
 import static com.brighttag.sc2cc.Configuration.TRANSFORMER_THREAD_NUM;
 
-public class HectorCassandraModule extends AbstractModule {
-  private static Logger log = LoggerFactory.getLogger(HectorCassandraModule.class);
+public class MainModule extends AbstractModule {
+  private static Logger log = LoggerFactory.getLogger(MainModule.class);
 
   @Override
   protected void configure() {

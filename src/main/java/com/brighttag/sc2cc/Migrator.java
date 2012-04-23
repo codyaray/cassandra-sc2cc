@@ -32,15 +32,15 @@ import org.slf4j.LoggerFactory;
  * @author codyaray
  * @since 4/19/2012
  */
-public class Transformer {
-  private static Logger log = LoggerFactory.getLogger(Transformer.class);
+public class Migrator {
+  private static Logger log = LoggerFactory.getLogger(Migrator.class);
 
   private final Cluster cluster;
   private final Keyspace keyspace;
   private final ListeningExecutorService executor;
 
   @Inject
-  public Transformer(Cluster cluster, Keyspace keyspace, ExecutorService executor) {
+  public Migrator(Cluster cluster, Keyspace keyspace, ExecutorService executor) {
     this.cluster = cluster;
     this.keyspace = keyspace;
     this.executor = MoreExecutors.listeningDecorator(executor);
@@ -84,7 +84,7 @@ public class Transformer {
    * @return a list of futures representing the number of rows inserted by each worker
    * @throws InterruptedException 
    */
-  public List<ListenableFuture<Integer>> transform(String oldColumnFamily, String newColumnFamily,
+  public List<ListenableFuture<Integer>> migrate(String oldColumnFamily, String newColumnFamily,
           int rowCount, int taskSize) throws InterruptedException {
     log.info("Transforming column family {} to {} using taskSize {} and rowCount {}",
         new Object[] {oldColumnFamily, newColumnFamily, taskSize, rowCount});

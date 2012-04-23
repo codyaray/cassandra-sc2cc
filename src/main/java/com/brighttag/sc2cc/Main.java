@@ -21,16 +21,16 @@ public class Main {
   private static Logger log = LoggerFactory.getLogger(Main.class);
 
   public static void main(String[] args) {
-    Injector injector = Guice.createInjector(new HectorCassandraModule());
+    Injector injector = Guice.createInjector(new MainModule());
 
-    Transformer transformer = injector.getInstance(Transformer.class);
+    Migrator migrator = injector.getInstance(Migrator.class);
     String oldColumnFamily = injector.getInstance(Key.get(String.class, Names.named(CASSANDRA_OLD_COLUMN_FAMILY)));
     String newColumnFamily = injector.getInstance(Key.get(String.class, Names.named(CASSANDRA_NEW_COLUMN_FAMILY)));
     int taskSize = injector.getInstance(Key.get(Integer.class, Names.named(TRANSFORMER_TASK_SIZE)));
 
     try {
       long startTime = System.currentTimeMillis();
-      List<ListenableFuture<Integer>> futures = transformer.transform(
+      List<ListenableFuture<Integer>> futures = migrator.migrate(
           oldColumnFamily, newColumnFamily, taskSize, taskSize); // fetch one worker's worth of tasks as DB rows
       int total = sum(Futures.allAsList(futures).get()); // waits for completion
 
@@ -41,7 +41,7 @@ public class Main {
     } catch (ExecutionException e) {
       log.error("Error while rewriting data", e);
     } finally {
-      transformer.shutdown();
+      migrator.shutdown();
     }
   }
 
