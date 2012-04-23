@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -53,7 +54,7 @@ public class Transformer {
   /**
    * Transforms Cassandra data from using Super Columns to Composite Columns,
    * rewriting data from {@code oldColumnFamily} to {@code newColumnFamily} in
-   * the process. The {@code newColumnFamily} must already exist.
+   * the process. The {@code newColumnFamily} schema must already exist.
    *
    * Example:
    * 
@@ -68,35 +69,50 @@ public class Transformer {
    *         row_key
    *             super_column_name:column_name=column_value
    * 
+   * Implementation Notes:
+   * 
+   * All reads are done in the main thread. The SuperRowIterator queries Cassandra for blocks of
+   * {@code rowCount} super rows. The rows are then grouped in lists of size {@code taskCount}.
+   * Lists are held in a blocking queue of size {@code queueSize} until they can be processed.
+   * There are {@code threadNum} worker threads. When the queue is full, the caller thread
+   * processes the next task to be submitted.
+   * 
    * @param oldColumnFamily the name of the existing column family
    * @param newColumnFamily the name of the new, empty column family
-   * @param groupSize the number of rows to rewrite per worker
+   * @param rowCount the number of rows to read in chunks from the database
+   * @param taskSize the number of rows to rewrite per worker
    * @return a list of futures representing the number of rows inserted by each worker
+   * @throws InterruptedException 
    */
-  public List<ListenableFuture<Integer>> transform(String oldColumnFamily, String newColumnFamily, int groupSize) {
-    log.info("Transforming column family {} to {} using groupSize {}",
-        new Object[] {oldColumnFamily, newColumnFamily, groupSize});
+  public List<ListenableFuture<Integer>> transform(String oldColumnFamily, String newColumnFamily,
+          int rowCount, int taskSize) throws InterruptedException {
+    log.info("Transforming column family {} to {} using taskSize {} and rowCount {}",
+        new Object[] {oldColumnFamily, newColumnFamily, taskSize, rowCount});
 
+    int realRowCount = 0;
     List<ListenableFuture<Integer>> rowCounts = Lists.newArrayList();
     Iterable<SuperRow<String,String,String,String>> keyIterator =
-            new SuperRowIterator<String>(keyspace, oldColumnFamily, StringSerializer.get());
+            new SuperRowIterator<String>(keyspace, oldColumnFamily, StringSerializer.get(), rowCount);
 
     List<SuperRow<String,String,String,String>> rows = Lists.newArrayList();
     for (SuperRow<String,String,String,String> row : keyIterator) {
       rows.add(row);
-      if (rows.size() % groupSize == 0) {
-        rowCounts.add(doRewrite(newColumnFamily, rows));
-        rows.clear();
+      if (rows.size() % taskSize == 0) {
+        realRowCount += rows.size();
+        doRewrite(newColumnFamily, rows);
+        rows = Lists.newArrayList();
       }
     }
     // rewrite remaining rows
-    rowCounts.add(doRewrite(newColumnFamily, rows));
+    doRewrite(newColumnFamily, rows);
 
+    log.info("This many rows: {}", realRowCount);
     return rowCounts;
   }
 
   private ListenableFuture<Integer> doRewrite(String columnFamily,
       List<SuperRow<String,String,String,String>> rows) {
+    log.debug("Scheduling rewrite for rows {} through {}", rows.get(0).getKey(), rows.get(rows.size()-1).getKey());
     return executor.submit(new ReWriter(columnFamily, rows));
   }
 
@@ -110,7 +126,7 @@ public class Transformer {
 
     ReWriter(String columnFamily, List<SuperRow<String,String,String,String>> rows) {
       this.columnFamily = columnFamily;
-      this.rows = rows;
+      this.rows = ImmutableList.copyOf(rows);
     }
 
     /**
@@ -119,10 +135,12 @@ public class Transformer {
      */
     @Override
     public Integer call() throws Exception {
+      log.debug("Starting rewrite for rows {} through {}", rows.get(0).getKey(), rows.get(rows.size()-1).getKey());
       int count = rows.size();
 
       Mutator<String> mutator = HFactory.createMutator(keyspace, StringSerializer.get());
       for (SuperRow<String,String,String,String> row : rows) {
+        log.debug("Inserting row {}", row);
         for (HSuperColumn<String, String, String> superColumn : row.getSuperSlice().getSuperColumns()) {
           for (HColumn<String, String> column : superColumn.getColumns()) {
             HColumn<Composite,String> newColumn = column(superColumn, column);
@@ -131,7 +149,7 @@ public class Transformer {
         }
       }
       mutator.execute();
-      log.debug("Inserted {} rows", count);
+      log.info("Inserted {} rows", count);
 
       return Integer.valueOf(count);
     }

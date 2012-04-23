@@ -3,50 +3,39 @@ package com.brighttag.sc2cc;
 import java.io.IOException;
 import java.util.Properties;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class Configuration {
+  private static Logger log = LoggerFactory.getLogger(Configuration.class);
+
   static final String CASSANDRA_CLUSTER_NAME = "com.brighttag.sc2cc.cluster.name";
   static final String CASSANDRA_CLUSTER_HOSTS = "com.brighttag.sc2cc.cluster.hosts";
   static final String CASSANDRA_KEYSPACE_NAME = "com.brighttag.sc2cc.keyspace.name";
   static final String CASSANDRA_OLD_COLUMN_FAMILY = "com.brighttag.sc2cc.column.family.old";
   static final String CASSANDRA_NEW_COLUMN_FAMILY = "com.brighttag.sc2cc.column.family.new";
-  static final String TRANSFORMER_WORKER_NUM = "com.brighttag.sc2cc.transformer.worker.num";
-  static final String TRANSFORMER_GROUP_SIZE = "com.brighttag.sc2cc.transformer.group.size";
-
-  private static final String DEFAULT_CLUSTER_NAME = "Test Cluster";
-  private static final String DEFAULT_CLUSTER_HOSTS = "127.0.0.1:9160";
-  private static final int DEFAULT_WORKER_NUM = 5;
-  private static final int DEFAULT_GROUP_SIZE = 10000;
-
-  public static Properties getProperties() {
-    Properties properties = new Properties();
-
-    // Optional properties (see defaults)
-    properties.setProperty(CASSANDRA_CLUSTER_NAME + ".resolved",
-        "${" + CASSANDRA_CLUSTER_NAME  + "|" + DEFAULT_CLUSTER_NAME  + "}");
-    properties.setProperty(CASSANDRA_CLUSTER_HOSTS + ".resolved",
-        "${" + CASSANDRA_CLUSTER_HOSTS + "|" + DEFAULT_CLUSTER_HOSTS + "}");
-    properties.setProperty(TRANSFORMER_WORKER_NUM + ".resolved",
-        "${" + TRANSFORMER_WORKER_NUM  + "|" + DEFAULT_WORKER_NUM    + "}");
-    properties.setProperty(TRANSFORMER_GROUP_SIZE + ".resolved",
-        "${" + TRANSFORMER_GROUP_SIZE  + "|" + DEFAULT_GROUP_SIZE    + "}");
-
-    // Required properties
-    properties.setProperty(CASSANDRA_KEYSPACE_NAME + ".resolved",
-        "${" + CASSANDRA_KEYSPACE_NAME     + "}");
-    properties.setProperty(CASSANDRA_OLD_COLUMN_FAMILY + ".resolved",
-        "${" + CASSANDRA_OLD_COLUMN_FAMILY + "}");
-    properties.setProperty(CASSANDRA_NEW_COLUMN_FAMILY + ".resolved",
-        "${" + CASSANDRA_NEW_COLUMN_FAMILY + "}");
-    return properties;
-  }
+  static final String TRANSFORMER_TASK_SIZE = "com.brighttag.sc2cc.transformer.task.size";
+  static final String TRANSFORMER_QUEUE_SIZE = "com.brighttag.sc2cc.transformer.queue.size";
+  static final String TRANSFORMER_THREAD_NUM = "com.brighttag.sc2cc.transformer.thread.num";
 
   public static Properties getProperties(String filename) {
     Properties properties = new Properties();
+    properties.putAll(getDefaults()); // rocoto doesn't like defaults given to Properties constructor
     try {
       properties.load(Configuration.class.getResourceAsStream(filename));
     } catch (IOException e) {
-      e.printStackTrace();
+      log.error("Problem reading configuration file {}", filename, e);
     }
+    return properties;
+  }
+
+  private static Properties getDefaults() {
+    Properties properties = new Properties();
+    properties.setProperty(CASSANDRA_CLUSTER_NAME,  "Test Cluster");
+    properties.setProperty(CASSANDRA_CLUSTER_HOSTS, "127.0.0.1:9160");
+    properties.setProperty(TRANSFORMER_TASK_SIZE,   "500");
+    properties.setProperty(TRANSFORMER_QUEUE_SIZE,  "10");
+    properties.setProperty(TRANSFORMER_THREAD_NUM,  "5");
     return properties;
   }
 }

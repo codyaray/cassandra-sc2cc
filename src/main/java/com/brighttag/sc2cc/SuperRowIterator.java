@@ -32,13 +32,17 @@ public class SuperRowIterator<K> implements Iterator<SuperRow<K,String,String,St
   private SuperRow<K,String,String,String> lastReadValue = null;
 
   public SuperRowIterator(Keyspace keyspace, String columnFamily, Serializer<K> serializer) {
+    this(keyspace, columnFamily, serializer, MAX_ROW_COUNT);
+  }
+
+  public SuperRowIterator(Keyspace keyspace, String columnFamily, Serializer<K> serializer, int rowCount) {
     query = HFactory
             .createRangeSuperSlicesQuery(keyspace, serializer, stringSerializer, stringSerializer, stringSerializer)
             .setColumnFamily(columnFamily)
             .setRange(null, null, false, MAX_COL_COUNT)
-            .setRowCount(MAX_ROW_COUNT);
+            .setRowCount(rowCount);
 
-    runQuery(null);
+    runQuery(null);    
   }
 
   @Override

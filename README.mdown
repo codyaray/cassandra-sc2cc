@@ -5,10 +5,9 @@ With one run of `sc2cc`, your columns will be as Composite as ever.
 
 # Configuration
 
-You just need to know three things:
+You just need to know two things:
 
 * Configuration is properties-file based. See `src/main/resources/sc2cc.properties`.
-* You can also override any of the properties by passing `-Dkey=value` to the `mvn` command.
 * Defaults are set in `src/main/java/com/brighttag/sc2cc/Configuration.java`.
 
 # Usage
@@ -20,6 +19,6 @@ into the CLI to create the new column family.
 
 To begin the transformation, just run
 
-    mvn -e exec:java -Dexec.mainClass="com.brighttag.sc2cc.Transformer"
+    mvn -e exec:java -Dexec.mainClass="com.brighttag.sc2cc.Main"
 
 That's it!

@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import static com.brighttag.sc2cc.Configuration.CASSANDRA_NEW_COLUMN_FAMILY;
 import static com.brighttag.sc2cc.Configuration.CASSANDRA_OLD_COLUMN_FAMILY;
-import static com.brighttag.sc2cc.Configuration.TRANSFORMER_GROUP_SIZE;
+import static com.brighttag.sc2cc.Configuration.TRANSFORMER_TASK_SIZE;
 
 public class Main {
   private static Logger log = LoggerFactory.getLogger(Main.class);
@@ -24,13 +24,14 @@ public class Main {
     Injector injector = Guice.createInjector(new HectorCassandraModule());
 
     Transformer transformer = injector.getInstance(Transformer.class);
-    String oldColumnFamily = injector.getInstance(Key.get(String.class, Names.named(CASSANDRA_OLD_COLUMN_FAMILY + ".resolved")));
-    String newColumnFamily = injector.getInstance(Key.get(String.class, Names.named(CASSANDRA_NEW_COLUMN_FAMILY + ".resolved")));
-    int groupSize = injector.getInstance(Key.get(Integer.class, Names.named(TRANSFORMER_GROUP_SIZE + ".resolved")));
+    String oldColumnFamily = injector.getInstance(Key.get(String.class, Names.named(CASSANDRA_OLD_COLUMN_FAMILY)));
+    String newColumnFamily = injector.getInstance(Key.get(String.class, Names.named(CASSANDRA_NEW_COLUMN_FAMILY)));
+    int taskSize = injector.getInstance(Key.get(Integer.class, Names.named(TRANSFORMER_TASK_SIZE)));
 
     try {
       long startTime = System.currentTimeMillis();
-      List<ListenableFuture<Integer>> futures = transformer.transform(oldColumnFamily, newColumnFamily, groupSize);
+      List<ListenableFuture<Integer>> futures = transformer.transform(
+          oldColumnFamily, newColumnFamily, taskSize, taskSize); // fetch one worker's worth of tasks as DB rows
       int total = sum(Futures.allAsList(futures).get()); // waits for completion
 
       log.info("Transformed {} rows in {} ms", total, System.currentTimeMillis() - startTime);
@@ -39,9 +40,9 @@ public class Main {
       Thread.currentThread().interrupt();
     } catch (ExecutionException e) {
       log.error("Error while rewriting data", e);
+    } finally {
+      transformer.shutdown();
     }
-
-    transformer.shutdown();
   }
 
   // surprised there's nothing that does this somewhere on the classpath already
