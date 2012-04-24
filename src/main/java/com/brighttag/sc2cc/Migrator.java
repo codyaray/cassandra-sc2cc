@@ -99,12 +99,12 @@ public class Migrator {
       rows.add(row);
       if (rows.size() % taskSize == 0) {
         realRowCount += rows.size();
-        doRewrite(newColumnFamily, rows);
+        rowCounts.add(doRewrite(newColumnFamily, rows));
         rows = Lists.newArrayList();
       }
     }
     // rewrite remaining rows
-    doRewrite(newColumnFamily, rows);
+    rowCounts.add(doRewrite(newColumnFamily, rows));
 
     log.info("This many rows: {}", realRowCount);
     return rowCounts;
@@ -122,7 +122,7 @@ public class Migrator {
    */
   private class ReWriter implements Callable<Integer> {
     private final String columnFamily;
-    private final List<SuperRow<String,String,String,String>> rows;
+    private List<SuperRow<String,String,String,String>> rows; // not final to set null below
 
     ReWriter(String columnFamily, List<SuperRow<String,String,String,String>> rows) {
       this.columnFamily = columnFamily;
@@ -151,6 +151,7 @@ public class Migrator {
       mutator.execute();
       log.info("Inserted {} rows", count);
 
+      rows = null; // allow the rows to be reclaimed by GC
       return Integer.valueOf(count);
     }
   }
