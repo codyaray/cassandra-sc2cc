@@ -15,6 +15,9 @@ import me.prettyprint.hector.api.query.RangeSuperSlicesQuery;
  * This class returns each key in the specified Super Column Family as an Iterator.
  * Heavily based upon Hector's {@code KeyIterator} implementation.
  *
+ * @author codyaray
+ * @since 4/19/2012
+ * 
  * @param <K> the type of the row key
  */
 public class SuperRowIterator<K> implements Iterator<SuperRow<K,String,String,String>>,

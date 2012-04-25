@@ -28,6 +28,12 @@ import static com.brighttag.sc2cc.Configuration.TRANSFORMER_TASK_SIZE;
 import static com.brighttag.sc2cc.Configuration.TRANSFORMER_QUEUE_SIZE;
 import static com.brighttag.sc2cc.Configuration.TRANSFORMER_THREAD_NUM;
 
+/**
+ * Guice module to wire up the executor and cassandra client.
+ * 
+ * @author codyaray
+ * @since 4/19/2012
+ */
 public class MainModule extends AbstractModule {
   private static Logger log = LoggerFactory.getLogger(MainModule.class);
 

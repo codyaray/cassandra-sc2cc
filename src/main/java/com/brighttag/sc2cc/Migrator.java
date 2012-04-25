@@ -26,8 +26,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Multi-threaded bulk transformer to rewrite SuperColumn-based data 
- * to use Composite Columns instead.
+ * Multi-threaded asynchronous bulk transformer to rewrite
+ * SuperColumn-based data to use Composite Columns instead.
  * 
  * @author codyaray
  * @since 4/19/2012
@@ -46,6 +46,9 @@ public class Migrator {
     this.executor = MoreExecutors.listeningDecorator(executor);
   }
 
+  /**
+   * Shutdown the migrator.
+   */
   public void shutdown() {
     executor.shutdown();
     cluster.getConnectionManager().shutdown();

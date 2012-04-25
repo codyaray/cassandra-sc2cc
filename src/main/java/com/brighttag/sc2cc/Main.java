@@ -17,6 +17,14 @@ import static com.brighttag.sc2cc.Configuration.CASSANDRA_NEW_COLUMN_FAMILY;
 import static com.brighttag.sc2cc.Configuration.CASSANDRA_OLD_COLUMN_FAMILY;
 import static com.brighttag.sc2cc.Configuration.TRANSFORMER_TASK_SIZE;
 
+/**
+ * Migrates data from the SuperColumn-based {@code oldColumnFamily} to the CompositeColumn-based
+ * {@code newColumnFamily} using the configured executor parameters. Waits for the asynchronous
+ * migration to complete and logs the resulting time and number of migrated rows.
+ * 
+ * @author codyaray
+ * @since 4/19/2012
+ */
 public class Main {
   private static Logger log = LoggerFactory.getLogger(Main.class);
 
